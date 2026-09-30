@@ -1,0 +1,67 @@
+# Секреты и переменные окружения (важно не закоммитить ключи Cloudinary и SECRET_KEY)
+.env
+.env.*
+!.env.example
+
+# База данных SQLite (если используется локально)
+*.sqlite3
+*.db
+
+# Виртуальное окружение
+venv/
+env/
+ENV/
+.venv/
+
+# Байткод Python и кэш
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Логи
+*.log
+local_settings.py
+db.sqlite3-journal
+
+# Медиа и статика (при локальной разработке)
+media/
+staticfiles/
+
+# IDE и редакторы кода
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Тестирование и покрытие
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Пакеты и сборка
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
