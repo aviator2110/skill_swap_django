@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .forms import RegisterForm, LoginForm
+from .forms import RegisterForm, LoginForm, ProfileEditForm
 from .models import User
 
 
@@ -43,3 +44,39 @@ def Login_view(request):
     else:
         form = LoginForm()
     return render(request, 'users/login.html', {'form': form})
+
+def profile_view(request):
+    return render(request, 'users/profile.html')
+
+@login_required(login_url='login')
+def profile_edit_view(request):
+    if request.method == 'POST':
+        form = ProfileEditForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            user = request.user
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['email']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.bio = form.cleaned_data['bio']
+
+            avatar = form.cleaned_data.get('avatar')
+            if avatar:
+                user.avatar = avatar
+
+            user.save()
+            return redirect('/profile/')
+    else:
+        form = ProfileEditForm(
+            initial={
+                'username': request.user.username,
+                'email': request.user.email,
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+                'bio': request.user.bio,
+            },
+            user=request.user
+        )
+
+    return render(request, 'users/profile_edit.html', {'form': form})
+
