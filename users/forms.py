@@ -48,15 +48,14 @@ class RegisterForm(forms.Form):
 
 class LoginForm(forms.Form):
     username = forms.CharField(
-        label="Username",
+        label="Username or email",
         required=True,
         widget=forms.TextInput(attrs={
-            "placeholder": "Enter your username",
+            "placeholder": "Enter your username or email",
         })
     )
     password = forms.CharField(
         label="Password",
-        min_length=8,
         required=True,
         widget=forms.PasswordInput(attrs={
             "placeholder": "Enter your password",
