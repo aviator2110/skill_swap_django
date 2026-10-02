@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from .forms import RegisterForm, LoginForm, ProfileEditForm
@@ -46,8 +46,15 @@ def Login_view(request):
         form = LoginForm()
     return render(request, 'users/login.html', {'form': form})
 
+
+def Logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
 def profile_view(request):
     return render(request, 'users/profile.html')
+
 
 def profile_edit_view(request):
     if request.method == 'POST':
