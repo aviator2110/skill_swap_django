@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cloudinary',
     'users.apps.UsersConfig',
+    'offers.apps.OffersConfig',
 ]
 
 AUTH_USER_MODEL = 'users.User'
