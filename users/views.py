@@ -10,12 +10,13 @@ def Register_view(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
-            User.objects.create_user(
+            user = User.objects.create_user(
                 username=form.cleaned_data['username'],
                 email=form.cleaned_data['email'],
                 password=form.cleaned_data['password']
             )
-            return redirect('/')
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            return redirect('profile')
     else:
         form = RegisterForm()
     return render(request, 'users/register.html', {'form': form})
@@ -38,7 +39,7 @@ def Login_view(request):
                 )
                 if authenticated_user is not None:
                     login(request, authenticated_user)
-                    return redirect('/')
+                    return redirect('profile')
 
             form.add_error(None, 'Invalid username/email or password')
     else:
@@ -48,7 +49,6 @@ def Login_view(request):
 def profile_view(request):
     return render(request, 'users/profile.html')
 
-@login_required(login_url='login')
 def profile_edit_view(request):
     if request.method == 'POST':
         form = ProfileEditForm(request.POST, request.FILES, user=request.user)
@@ -65,7 +65,7 @@ def profile_edit_view(request):
                 user.avatar = avatar
 
             user.save()
-            return redirect('/profile/')
+            return redirect('profile')
     else:
         form = ProfileEditForm(
             initial={
@@ -79,4 +79,3 @@ def profile_edit_view(request):
         )
 
     return render(request, 'users/profile_edit.html', {'form': form})
-

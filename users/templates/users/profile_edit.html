@@ -1,1 +1,15 @@
-<h1>PROFILE EDIT</h1>
+{% extends 'base.html' %}
+
+{% block title %}Edit Profile - SkillSwap{% endblock %}
+
+{% block content %}
+<h2>Edit Profile</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save Changes</button>
+</form>
+
+<p><a href="{% url 'profile' %}">Cancel</a></p>
+{% endblock %}

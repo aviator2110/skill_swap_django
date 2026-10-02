@@ -1,1 +1,24 @@
-<h1>PROFILE</h1>
+{% extends 'base.html' %}
+
+{% block title %}Profile - SkillSwap{% endblock %}
+
+{% block content %}
+<h2>Profile</h2>
+
+<div>
+    {% if user.avatar %}
+        <img src="{{ user.avatar.url }}" alt="{{ user.username }}'s avatar" width="150">
+    {% else %}
+        <p>No avatar uploaded</p>
+    {% endif %}
+</div>
+
+<p><strong>Username:</strong> {{ user.username }}</p>
+<p><strong>Email:</strong> {{ user.email }}</p>
+<p><strong>First Name:</strong> {{ user.first_name|default:"Not specified" }}</p>
+<p><strong>Last Name:</strong> {{ user.last_name|default:"Not specified" }}</p>
+<p><strong>Role:</strong> {{ user.get_role_display }}</p>
+<p><strong>Bio:</strong> {{ user.bio|default:"No bio yet" }}</p>
+
+<p><a href="{% url 'profile_edit' %}">Edit Profile</a></p>
+{% endblock %}
