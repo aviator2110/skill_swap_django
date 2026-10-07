@@ -1,12 +1,21 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from cloudinary.models import CloudinaryField
+
+
+class CustomUserManager(UserManager):
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('role', 'super_admin')
+        return super().create_superuser(username, email, password, **extra_fields)
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
         SUPER_ADMIN = 'super_admin', 'Super Admin'
         ADMIN = 'admin', 'Admin'
         USER = 'user', 'User'
+
+    objects = CustomUserManager()
     
     role = models.CharField(
         max_length=20,
@@ -32,12 +41,21 @@ class User(AbstractUser):
         ordering = ['-date_joined']
 
     def save(self, *args, **kwargs):
+        if self._state.adding and self.is_superuser and self.role == self.Role.USER:
+            self.role = self.Role.SUPER_ADMIN
+
         if self.role == self.Role.SUPER_ADMIN:
             self.is_staff = True
             self.is_superuser = True
         elif self.role == self.Role.ADMIN:
             self.is_staff = True
+            self.is_superuser = False
+        else:
+            self.is_staff = False
+            self.is_superuser = False
+
         super().save(*args, **kwargs)
+
 
     @property
     def is_super_admin(self):
@@ -71,4 +89,4 @@ class User(AbstractUser):
     def average_rating(self):
         from offers.models import Review
         result = Review.objects.filter(offer__author=self).aggregate(models.Avg('rating'))['rating__avg']
-        return round(result, 1) if result is not None else None
+        return round(result, 1) if result is not None else None

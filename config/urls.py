@@ -1,11 +1,9 @@
 from django.contrib import admin
-from django.urls import path
-from users import views as users_views
+from django.urls import path, include
 
 urlpatterns = [
-    path('login/', users_views.Login_view, name='login'),
-    path('register/', users_views.Register_view, name='register'),
-    path('profile/', users_views.profile_view, name='profile'),
-    path('profile/edit/<str:username>/', users_views.profile_edit_view, name='profile_edit'),
-    path('logout/', users_views.Logout_view, name='logout'),
-]    
+    path('admin/', admin.site.urls),
+    path('', include('users.urls')),
+    path('', include('offers.urls')),
+]
+    
