@@ -17,28 +17,47 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.name)
-        super().save(*args, **kwargs)
+
+class Level(models.Model):
+    name = models.CharField("Name", max_length=100, unique=True)
+    slug = models.SlugField("Slug", max_length=100, unique=True, blank=True)
+
+    class Meta:
+        verbose_name = "Level"
+        verbose_name_plural = "Levels"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Format(models.Model):
+    name = models.CharField("Name", max_length=100, unique=True)
+    slug = models.SlugField("Slug", max_length=100, unique=True, blank=True)
+
+    class Meta:
+        verbose_name = "Format"
+        verbose_name_plural = "Formats"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class Status(models.Model):
+    name = models.CharField("Name", max_length=100, unique=True)
+    slug = models.SlugField("Slug", max_length=100, unique=True, blank=True)
+
+    class Meta:
+        verbose_name = "Status"
+        verbose_name_plural = "Statuses"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
 
 
 class Offer(models.Model):
-    class Level(models.TextChoices):
-        BEGINNER = 'beginner', 'Beginner'
-        INTERMEDIATE = 'intermediate', 'Intermediate'
-        ADVANCED = 'advanced', 'Advanced'
-
-    class Format(models.TextChoices):
-        ONLINE = 'online', 'Online'
-        OFFLINE = 'offline', 'Offline'
-
-    class Status(models.TextChoices):
-        DRAFT = 'draft', 'Draft'
-        PENDING = 'pending', 'Pending'
-        PUBLISHED = 'published', 'Published'
-        REJECTED = 'rejected', 'Rejected'
-
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -51,6 +70,24 @@ class Offer(models.Model):
         related_name='offers',
         verbose_name="Category"
     )
+    level = models.ForeignKey(
+        Level,
+        on_delete=models.PROTECT,
+        related_name='offers',
+        verbose_name="Level"
+    )
+    format = models.ForeignKey(
+        Format,
+        on_delete=models.PROTECT,
+        related_name='offers',
+        verbose_name="Format"
+    )
+    status = models.ForeignKey(
+        Status,
+        on_delete=models.PROTECT,
+        related_name='offers',
+        verbose_name="Status"
+    )
     title = models.CharField("Title", max_length=200)
     description = models.TextField("Description")
     cover_image = CloudinaryField(
@@ -58,28 +95,10 @@ class Offer(models.Model):
         blank=True,
         null=True
     )
-    level = models.CharField(
-        "Level",
-        max_length=20,
-        choices=Level.choices,
-        default=Level.BEGINNER
-    )
-    format = models.CharField(
-        "Format",
-        max_length=20,
-        choices=Format.choices,
-        default=Format.ONLINE
-    )
     duration_minutes = models.PositiveIntegerField(
         "Duration (minutes)",
         default=60,
         help_text="Duration of lesson in minutes"
-    )
-    status = models.CharField(
-        "Status",
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING
     )
     created_at = models.DateTimeField("Created at", auto_now_add=True)
     updated_at = models.DateTimeField("Updated at", auto_now=True)

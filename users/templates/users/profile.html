@@ -20,5 +20,5 @@
 <p><strong>Role:</strong> {{ user.get_role_display }}</p>
 <p><strong>Bio:</strong> {{ user.bio|default:"No bio yet" }}</p>
 
-<p><a href="{% url 'profile_edit' %}">Edit Profile</a></p>
+<p><a href="{% url 'profile_edit' user.username %}">Edit Profile</a></p>
 {% endblock %}

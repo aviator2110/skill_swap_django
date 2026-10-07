@@ -56,7 +56,7 @@ def profile_view(request):
     return render(request, 'users/profile.html')
 
 
-def profile_edit_view(request):
+def profile_edit_view(request, username:str):
     if request.method == 'POST':
         form = ProfileEditForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
