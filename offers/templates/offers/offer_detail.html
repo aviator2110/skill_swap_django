@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ offer.title }} — SkillSwap{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'explore' %}">&larr; Back to Explore Catalog</a></p>
+
+<div class="stats-bar" style="align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+        {% if offer.author.avatar %}
+            <img src="{{ offer.author.avatar.url }}" alt="{{ offer.author.username }}" class="avatar avatar-md">
+        {% else %}
+            <span class="avatar avatar-md" style="display: flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 1.25rem;">
+                {{ offer.author.username|slice:":1"|upper }}
+            </span>
+        {% endif %}
+        <div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Skill Author</div>
+            <a href="{% url 'user_profile' offer.author.username %}" style="font-size: 1.15rem; font-weight: 700; color: var(--text);">
+                {{ offer.author.username }}
+            </a>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                Published: {{ offer.created_at|date:"M d, Y, H:i" }}
+            </div>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+        <div class="stat-item">
+            <span class="stat-value">
+                {% if offer.average_rating %}
+                    ★ {{ offer.average_rating }}
+                {% else %}
+                    —
+                {% endif %}
+            </span>
+            <span class="stat-label">Average Rating</span>
+        </div>
+
+        <div class="stat-item">
+            <span class="stat-value">{{ offer.reviews_count }}</span>
+            <span class="stat-label">Ratings Count</span>
+        </div>
+
+        <div class="stat-item">
+            <span class="stat-value">{{ offer.completed_sessions_count }}</span>
+            <span class="stat-label">Lessons Completed</span>
+        </div>
+    </div>
+</div>
+
+<article style="margin-bottom: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+        <div>
+            <h1 style="margin-bottom: 0.5rem;">{{ offer.title }}</h1>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <mark>{{ offer.category.name }}</mark>
+                <span class="badge">{{ offer.level.name }}</span>
+                <span class="badge">{{ offer.format.name }}</span>
+                <span class="badge">⏱ {{ offer.duration_minutes }} mins</span>
+                <span class="badge badge-success">{{ offer.status.name }}</span>
+            </div>
+        </div>
+
+        {% if user.is_staff or user == offer.author %}
+            <div>
+                <a href="{% url 'admin:offers_offer_change' offer.pk %}" class="button secondary" target="_blank">
+                    ⚙ Edit in Admin
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if offer.cover_image %}
+        <div style="margin: 1.5rem 0;">
+            <img src="{{ offer.cover_image.url }}" alt="{{ offer.title }}" style="max-height: 420px; width: 100%; object-fit: cover; border-radius: var(--radius-md);">
+        </div>
+    {% endif %}
+
+    <h3>Description</h3>
+    <div style="white-space: pre-line; line-height: 1.7; color: var(--text);">
+        {{ offer.description }}
+    </div>
+</article>
+
+<section>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2>Student Reviews ({{ reviews.count }})</h2>
+    </div>
+
+    {% if reviews %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for review in reviews %}
+                <article style="padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <strong>{{ review.author.username }}</strong>
+                            <span class="rating-pill">★ {{ review.rating }}/5</span>
+                        </div>
+                        <small style="color: var(--text-muted);">{{ review.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    <p style="margin: 0; color: var(--text);">{{ review.comment }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state" style="padding: 2rem;">
+            <p>This skill offer does not have any reviews yet. Reviews can be submitted after completing a lesson.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

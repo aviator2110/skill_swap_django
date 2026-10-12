@@ -90,3 +90,4 @@ class User(AbstractUser):
         from offers.models import Review
         result = Review.objects.filter(offer__author=self).aggregate(models.Avg('rating'))['rating__avg']
         return round(result, 1) if result is not None else None
+ 

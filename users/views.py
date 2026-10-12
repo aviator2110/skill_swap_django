@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -52,8 +52,32 @@ def Logout_view(request):
     return redirect('login')
 
 
-def profile_view(request):
-    return render(request, 'users/profile.html')
+def profile_view(request, username=None):
+    if username is None:
+        if not request.user.is_authenticated:
+            return redirect('login')
+        target_user = request.user
+        is_own_profile = True
+    else:
+        target_user = get_object_or_404(User, username=username)
+        is_own_profile = request.user.is_authenticated and (request.user == target_user)
+
+    if is_own_profile:
+        user_offers = target_user.offers.select_related('category', 'level', 'format', 'status').order_by('-created_at')
+    else:
+        user_offers = target_user.offers.filter(status__slug='published').select_related('category', 'level', 'format', 'status').order_by('-created_at')
+
+    from offers.models import Review
+    teacher_reviews = Review.objects.filter(offer__author=target_user).select_related('author', 'offer').order_by('-created_at')
+
+    context = {
+        'profile_user': target_user,
+        'is_own_profile': is_own_profile,
+        'user_offers': user_offers,
+        'teacher_reviews': teacher_reviews,
+    }
+    return render(request, 'users/profile.html', context)
+
 
 
 def profile_edit_view(request, username:str):

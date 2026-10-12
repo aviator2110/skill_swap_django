@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Mentors — Platform Teachers | SkillSwap{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Platform Mentors</h1>
+    <p>Experienced community members ready to teach and share their practical knowledge.</p>
+</section>
+
+<h2>All Mentors ({{ mentors.count }})</h2>
+
+{% if mentors %}
+    <section class="grid">
+        {% for mentor in mentors %}
+            <article style="text-align: center; align-items: center;">
+                {% if mentor.avatar %}
+                    <img src="{{ mentor.avatar.url }}" alt="{{ mentor.username }}" class="avatar avatar-lg" style="margin-bottom: 1rem;">
+                {% else %}
+                    <span class="avatar avatar-lg" style="display: inline-flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">
+                        {{ mentor.username|slice:":1"|upper }}
+                    </span>
+                {% endif %}
+
+                <h3 style="margin-bottom: 0.25rem;">
+                    <a href="{% url 'user_profile' mentor.username %}">{{ mentor.username }}</a>
+                </h3>
+
+                <span class="badge" style="margin-bottom: 0.75rem;">{{ mentor.get_role_display }}</span>
+
+                <p style="color: var(--text-muted); font-size: 0.9rem; min-height: 40px;">
+                    {{ mentor.bio|default:"No bio provided yet."|truncatewords:15 }}
+                </p>
+
+                <div style="display: flex; justify-content: space-around; width: 100%; padding: 0.75rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 0.75rem 0;">
+                    <div>
+                        <div style="font-weight: 700; color: var(--primary);">
+                            {% if mentor.average_rating %}
+                                ★ {{ mentor.average_rating }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">Rating</small>
+                    </div>
+
+                    <div>
+                        <div style="font-weight: 700; color: var(--text);">{{ mentor.published_offers_count }}</div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">Skills</small>
+                    </div>
+
+                    <div>
+                        <div style="font-weight: 700; color: var(--text);">{{ mentor.completed_lessons_count }}</div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">Lessons</small>
+                    </div>
+                </div>
+
+                <div style="margin-top: 0.5rem; width: 100%;">
+                    <a href="{% url 'user_profile' mentor.username %}" class="button secondary" style="width: 100%;">
+                        View Profile
+                    </a>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <div class="empty-state">
+        <h3>No Registered Mentors Yet</h3>
+        <p>Users become mentors once they have at least one published skill offer.</p>
+    </div>
+{% endif %}
+{% endblock %}
