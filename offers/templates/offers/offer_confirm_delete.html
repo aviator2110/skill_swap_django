@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Offer — {{ offer.title }} | SkillSwap{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 2rem auto;">
+    <article>
+        <h1>Confirm Deletion</h1>
+        <p>Are you sure you want to permanently delete the skill offer <strong>"{{ offer.title }}"</strong>?</p>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">This action cannot be undone. All associated data will be removed.</p>
+
+        <form method="post" style="padding: 0; border: none; box-shadow: none; background: transparent; margin-top: 1.5rem;">
+            {% csrf_token %}
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button type="submit" class="danger">Yes, Delete Offer</button>
+                <a href="{% url 'my_offers' %}" class="button secondary">Cancel</a>
+            </div>
+        </form>
+    </article>
+</div>
+{% endblock %}

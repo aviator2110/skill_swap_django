@@ -1,6 +1,10 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
-from .models import Offer
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import HttpResponseForbidden
+from .models import Offer, Status
+from .forms import OfferForm
 
 User = get_user_model()
 
@@ -40,4 +44,93 @@ def mentors_view(request):
         .order_by('-date_joined')
     )
     return render(request, 'offers/mentors.html', {'mentors': mentors})
+
+
+@login_required
+def my_offers_view(request):
+    offers = (
+        request.user.offers.select_related('category', 'level', 'format', 'status')
+        .order_by('-created_at')
+    )
+    return render(request, 'offers/my_offers.html', {'offers': offers})
+
+
+@login_required
+def offer_create_view(request):
+    if not request.user.can_create_offers:
+        messages.error(request, "Your account is restricted from creating new offers.")
+        return redirect('my_offers')
+
+    if request.method == 'POST':
+        form = OfferForm(request.POST, request.FILES)
+        if form.is_valid():
+            offer = form.save(commit=False)
+            offer.author = request.user
+
+            if 'save_draft' in request.POST:
+                offer.status = Status.objects.filter(slug='draft').first()
+                messages.success(request, "Offer saved as draft.")
+            else:
+                offer.status = Status.objects.filter(slug='pending').first()
+                messages.success(request, "Offer submitted for administrator review.")
+
+            offer.save()
+            return redirect('my_offers')
+    else:
+        form = OfferForm()
+
+    return render(request, 'offers/offer_form.html', {'form': form, 'is_edit': False})
+
+
+@login_required
+def offer_edit_view(request, pk):
+    offer = get_object_or_404(Offer, pk=pk)
+
+    if offer.author != request.user and not request.user.is_admin_user:
+        return HttpResponseForbidden("You do not have permission to edit this offer.")
+
+    if request.user == offer.author and not request.user.can_create_offers:
+        messages.error(request, "Your account is restricted from updating offers.")
+        return redirect('my_offers')
+
+    if request.method == 'POST':
+        form = OfferForm(request.POST, request.FILES, instance=offer)
+        if form.is_valid():
+            was_published = bool(offer.status and offer.status.slug == 'published')
+            updated_offer = form.save(commit=False)
+
+            if was_published and not request.user.is_admin_user:
+                updated_offer.status = Status.objects.filter(slug='pending').first()
+                messages.warning(request, "Changes saved. As this offer was published, it has been resubmitted for admin review.")
+            elif 'save_draft' in request.POST:
+                updated_offer.status = Status.objects.filter(slug='draft').first()
+                messages.success(request, "Offer saved as draft.")
+            elif offer.status and offer.status.slug in ['draft', 'rejected']:
+                updated_offer.status = Status.objects.filter(slug='pending').first()
+                messages.success(request, "Offer submitted for administrator review.")
+            else:
+                messages.success(request, "Offer updated successfully.")
+
+            updated_offer.save()
+            return redirect('offer_detail', pk=updated_offer.pk)
+    else:
+        form = OfferForm(instance=offer)
+
+    return render(request, 'offers/offer_form.html', {'form': form, 'is_edit': True, 'offer': offer})
+
+
+@login_required
+def offer_delete_view(request, pk):
+    offer = get_object_or_404(Offer, pk=pk)
+
+    if offer.author != request.user and not request.user.is_admin_user:
+        return HttpResponseForbidden("You do not have permission to delete this offer.")
+
+    if request.method == 'POST':
+        offer.delete()
+        messages.success(request, "Offer deleted successfully.")
+        return redirect('my_offers')
+
+    return render(request, 'offers/offer_confirm_delete.html', {'offer': offer})
+
 

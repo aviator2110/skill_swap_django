@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}My Offers — SkillSwap{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin: 0;">My Skill Offers</h1>
+        <p style="color: var(--text-muted); margin: 0.25rem 0 0 0;">Manage your published and draft skill offers.</p>
+    </div>
+    {% if user.can_create_offers %}
+        <a href="{% url 'offer_create' %}" class="button">+ Create New Offer</a>
+    {% else %}
+        <span class="badge badge-danger">Account Restricted</span>
+    {% endif %}
+</div>
+
+{% if offers %}
+    <table>
+        <thead>
+            <tr>
+                <th>Skill</th>
+                <th>Category</th>
+                <th>Level / Format</th>
+                <th>Status</th>
+                <th>Rating</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for offer in offers %}
+                <tr>
+                    <td>
+                        <strong><a href="{% url 'offer_detail' offer.pk %}">{{ offer.title }}</a></strong>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            Duration: {{ offer.duration_minutes }} mins &bull; Created {{ offer.created_at|date:"M d, Y" }}
+                        </div>
+                    </td>
+                    <td><mark>{{ offer.category.name }}</mark></td>
+                    <td>
+                        <span class="badge">{{ offer.level.name }}</span>
+                        <span class="badge">{{ offer.format.name }}</span>
+                    </td>
+                    <td>
+                        {% if offer.status.slug == 'published' %}
+                            <span class="badge badge-success">{{ offer.status.name }}</span>
+                        {% elif offer.status.slug == 'pending' %}
+                            <span class="badge badge-warning">Pending Review</span>
+                        {% elif offer.status.slug == 'rejected' %}
+                            <span class="badge badge-danger">{{ offer.status.name }}</span>
+                        {% else %}
+                            <span class="badge">{{ offer.status.name }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if offer.average_rating %}
+                            <span class="rating-pill">★ {{ offer.average_rating }}</span>
+                        {% else %}
+                            <small style="color: var(--text-muted);">—</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <a href="{% url 'offer_edit' offer.pk %}" class="button secondary" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Edit</a>
+                            <a href="{% url 'offer_delete' offer.pk %}" class="button danger" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Delete</a>
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <div class="empty-state">
+        <h3>You have no skill offers yet</h3>
+        <p>Start sharing your knowledge with the community by creating your first skill offering.</p>
+        {% if user.can_create_offers %}
+            <p><a href="{% url 'offer_create' %}" class="button">+ Create Your First Offer</a></p>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

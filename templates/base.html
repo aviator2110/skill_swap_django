@@ -15,11 +15,13 @@
                 <li><a href="{% url 'explore' %}">Explore</a></li>
                 <li><a href="{% url 'mentors' %}">Mentors</a></li>
                 {% if user.is_authenticated %}
+                    <li><a href="{% url 'my_offers' %}">My Offers</a></li>
                     <li><a href="{% url 'profile' %}">Profile ({{ user.username }})</a></li>
                     {% if user.is_staff %}
                         <li><a href="{% url 'admin:index' %}" target="_blank">Admin</a></li>
                     {% endif %}
                     <li><a href="{% url 'logout' %}">Logout</a></li>
+
                 {% else %}
                     <li><a href="{% url 'login' %}">Login</a></li>
                     <li><a href="{% url 'register' %}" class="button" style="padding: 0.35rem 0.85rem; font-size: 0.875rem;">Register</a></li>

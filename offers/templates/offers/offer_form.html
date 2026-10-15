@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if is_edit %}Edit Offer — {{ offer.title }}{% else %}Create New Offer — SkillSwap{% endif %}
+{% endblock %}
+
+
+{% block content %}
+<div style="max-width: 720px; margin: 0 auto;">
+    <p><a href="{% url 'my_offers' %}">&larr; Back to My Offers</a></p>
+
+    <h1>{% if is_edit %}Edit Skill Offer{% else %}Create New Skill Offer{% endif %}</h1>
+
+    {% if is_edit and offer.status.slug == 'published' %}
+        <div style="background-color: var(--warning-light); border: 1px solid #fde68a; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin-bottom: 1.5rem; color: var(--warning-text); font-size: 0.9rem;">
+            <strong>Notice:</strong> This offer is currently published. Any modifications will resubmit it for administrator moderation before public changes take effect.
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div style="color: var(--danger); margin-bottom: 1rem;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div>
+            <label for="{{ form.title.id_for_label }}">Title</label>
+            {{ form.title }}
+            {{ form.title.errors }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <label for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+                {{ form.category.errors }}
+            </div>
+
+            <div>
+                <label for="{{ form.level.id_for_label }}">Difficulty Level</label>
+                {{ form.level }}
+                {{ form.level.errors }}
+            </div>
+
+            <div>
+                <label for="{{ form.format.id_for_label }}">Session Format</label>
+                {{ form.format }}
+                {{ form.format.errors }}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <label for="{{ form.duration_minutes.id_for_label }}">Duration (minutes)</label>
+                {{ form.duration_minutes }}
+                {{ form.duration_minutes.errors }}
+            </div>
+
+            <div>
+                <label for="{{ form.cover_image.id_for_label }}">Cover Image</label>
+                {{ form.cover_image }}
+                {{ form.cover_image.errors }}
+            </div>
+        </div>
+
+        <div>
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+            {{ form.description.errors }}
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 1.5rem; flex-wrap: wrap;">
+            <button type="submit" name="submit_review">
+                {% if is_edit %}Save Changes{% else %}Submit for Review{% endif %}
+            </button>
+            <button type="submit" name="save_draft" class="secondary">
+                Save as Draft
+            </button>
+            <a href="{% url 'my_offers' %}" style="margin-left: auto;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -62,14 +62,18 @@
             </div>
         </div>
 
-        {% if user.is_staff or user == offer.author %}
-            <div>
-                <a href="{% url 'admin:offers_offer_change' offer.pk %}" class="button secondary" target="_blank">
-                    ⚙ Edit in Admin
+        {% if user.is_authenticated and user == offer.author or user.is_admin_user %}
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <a href="{% url 'offer_edit' offer.pk %}" class="button secondary">
+                    ✏ Edit
+                </a>
+                <a href="{% url 'offer_delete' offer.pk %}" class="button danger">
+                    🗑 Delete
                 </a>
             </div>
         {% endif %}
     </div>
+
 
     {% if offer.cover_image %}
         <div style="margin: 1.5rem 0;">
