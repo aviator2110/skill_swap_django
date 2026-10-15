@@ -87,10 +87,55 @@
     </div>
 </article>
 
+<section style="margin-bottom: 2.5rem;">
+    {% if not user.is_authenticated %}
+        <div class="empty-state" style="padding: 1.5rem;">
+            <h3>Interested in this lesson?</h3>
+            <p><a href="{% url 'login' %}">Log in</a> or <a href="{% url 'register' %}">sign up</a> to send a booking request to {{ offer.author.username }}.</p>
+        </div>
+    {% elif is_author %}
+        <div style="background: var(--surface-alt); border-radius: var(--radius-sm); padding: 1rem 1.25rem; color: var(--text-muted); font-size: 0.9rem;">
+            You are the author of this skill offer.
+        </div>
+    {% elif active_booking %}
+        <div style="background-color: var(--primary-light); border: 1px solid #c7d2fe; border-radius: var(--radius-md); padding: 1.25rem 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <strong>Active Request Status:</strong>
+                    <span class="badge {% if active_booking.status == 'accepted' %}badge-success{% else %}badge-warning{% endif %}">
+                        {{ active_booking.get_status_display }}
+                    </span>
+                    <p style="margin: 0.35rem 0 0 0; color: var(--text-muted); font-size: 0.875rem;">
+                        Submitted on {{ active_booking.created_at|date:"M d, Y" }}
+                    </p>
+                </div>
+                <a href="{% url 'my_requests' %}" class="button secondary">View in My Requests</a>
+            </div>
+        </div>
+    {% elif can_book %}
+        <article style="background: var(--surface); border: 1px solid var(--border); padding: 1.5rem;">
+            <h2>Book a Lesson with {{ offer.author.username }}</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem;">
+                Send a booking request to coordinate session details, time, and preparation.
+            </p>
+            <form method="post" action="{% url 'booking_create' offer.pk %}" style="padding: 0; border: none; box-shadow: none; background: transparent; margin: 0;">
+                {% csrf_token %}
+                {{ booking_form.as_p }}
+                <button type="submit">Send Booking Request</button>
+            </form>
+        </article>
+    {% elif user.is_banned %}
+        <div style="background-color: var(--danger-light); border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 1rem; color: var(--danger-text);">
+            Your account is restricted from booking lessons.
+        </div>
+    {% endif %}
+</section>
+
 <section>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2>Student Reviews ({{ reviews.count }})</h2>
     </div>
+
 
     {% if reviews %}
         <div style="display: flex; flex-direction: column; gap: 1rem;">

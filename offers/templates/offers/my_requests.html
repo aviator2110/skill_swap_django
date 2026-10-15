@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}My Requests — SkillSwap{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1>My Booking Requests</h1>
+    <p style="color: var(--text-muted);">Manage your incoming lesson requests as a mentor and monitor your outgoing requests as a student.</p>
+</div>
+
+<section style="margin-bottom: 3rem;">
+    <h2>Incoming Requests (As Mentor)</h2>
+    {% if incoming_requests %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Skill Offering</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in incoming_requests %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                {% if req.student.avatar %}
+                                    <img src="{{ req.student.avatar.url }}" alt="{{ req.student.username }}" class="avatar avatar-sm" style="margin: 0; width: 32px; height: 32px;">
+                                {% else %}
+                                    <span class="avatar avatar-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 0.8rem;">
+                                        {{ req.student.username|slice:":1"|upper }}
+                                    </span>
+                                {% endif %}
+                                <a href="{% url 'user_profile' req.student.username %}"><strong>{{ req.student.username }}</strong></a>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{% url 'offer_detail' req.offer.pk %}">{{ req.offer.title }}</a>
+                        </td>
+                        <td style="max-width: 250px;">
+                            <span style="font-size: 0.875rem; color: var(--text);">{{ req.message|default:"No message attached."|truncatewords:15 }}</span>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                                <span class="badge badge-warning">Pending</span>
+                            {% elif req.status == 'accepted' %}
+                                <span class="badge badge-success">Accepted</span>
+                            {% elif req.status == 'completed' %}
+                                <span class="badge badge-success">Completed</span>
+                            {% elif req.status == 'rejected' %}
+                                <span class="badge badge-danger">Rejected</span>
+                            {% elif req.status == 'cancelled' %}
+                                <span class="badge badge-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge">{{ req.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small style="color: var(--text-muted);">{{ req.created_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <form method="post" action="{% url 'booking_status_update' req.pk 'accept' %}" style="padding: 0; border: none; box-shadow: none; background: transparent; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Accept</button>
+                                    </form>
+                                    <form method="post" action="{% url 'booking_status_update' req.pk 'reject' %}" style="padding: 0; border: none; box-shadow: none; background: transparent; margin: 0;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="secondary" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Reject</button>
+                                    </form>
+                                </div>
+                            {% elif req.status == 'accepted' %}
+                                <form method="post" action="{% url 'booking_status_update' req.pk 'complete' %}" style="padding: 0; border: none; box-shadow: none; background: transparent; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; background: var(--success);">Mark Completed</button>
+                                </form>
+                            {% else %}
+                                <small style="color: var(--text-muted);">Archived</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>You have no incoming lesson requests from students.</p>
+        </div>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Outgoing Requests (As Student)</h2>
+    {% if outgoing_requests %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Skill Offering</th>
+                    <th>Mentor</th>
+                    <th>Your Note</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in outgoing_requests %}
+                    <tr>
+                        <td>
+                            <strong><a href="{% url 'offer_detail' req.offer.pk %}">{{ req.offer.title }}</a></strong>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                {% if req.offer.author.avatar %}
+                                    <img src="{{ req.offer.author.avatar.url }}" alt="{{ req.offer.author.username }}" class="avatar avatar-sm" style="margin: 0; width: 32px; height: 32px;">
+                                {% else %}
+                                    <span class="avatar avatar-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 0.8rem;">
+                                        {{ req.offer.author.username|slice:":1"|upper }}
+                                    </span>
+                                {% endif %}
+                                <a href="{% url 'user_profile' req.offer.author.username %}">{{ req.offer.author.username }}</a>
+                            </div>
+                        </td>
+                        <td style="max-width: 250px;">
+                            <span style="font-size: 0.875rem; color: var(--text);">{{ req.message|default:"No message attached."|truncatewords:15 }}</span>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                                <span class="badge badge-warning">Pending Review</span>
+                            {% elif req.status == 'accepted' %}
+                                <span class="badge badge-success">Accepted &bull; Ready!</span>
+                            {% elif req.status == 'completed' %}
+                                <span class="badge badge-success">Completed</span>
+                            {% elif req.status == 'rejected' %}
+                                <span class="badge badge-danger">Declined</span>
+                            {% elif req.status == 'cancelled' %}
+                                <span class="badge badge-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge">{{ req.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small style="color: var(--text-muted);">{{ req.created_at|date:"M d, Y" }}</small>
+                        </td>
+                        <td>
+                            {% if req.status == 'pending' %}
+                                <form method="post" action="{% url 'booking_status_update' req.pk 'cancel' %}" style="padding: 0; border: none; box-shadow: none; background: transparent; margin: 0;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Cancel</button>
+                                </form>
+                            {% elif req.status == 'completed' %}
+                                <small style="color: var(--success); font-weight: 600;">Lesson Finished</small>
+                            {% else %}
+                                <small style="color: var(--text-muted);">—</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>You have not requested any lessons yet. Browse the <a href="{% url 'explore' %}">Explore catalog</a> to find mentors!</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

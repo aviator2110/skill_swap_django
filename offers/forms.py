@@ -25,3 +25,17 @@ class OfferForm(forms.ModelForm):
         if duration is not None and duration < 15:
             raise forms.ValidationError("Lesson duration must be at least 15 minutes.")
         return duration
+
+
+class BookingRequestForm(forms.ModelForm):
+    class Meta:
+        from .models import BookingRequest
+        model = BookingRequest
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(attrs={
+                'placeholder': 'Introduce yourself, specify your learning goals, and suggest your preferred dates/times...',
+                'rows': 3,
+            }),
+        }
+

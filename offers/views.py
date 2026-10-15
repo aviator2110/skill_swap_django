@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
-from .models import Offer, Status
-from .forms import OfferForm
+from .models import Offer, Status, BookingRequest
+from .forms import OfferForm, BookingRequestForm
 
 User = get_user_model()
 
@@ -26,13 +26,31 @@ def offer_detail_view(request, pk):
     reviews = offer.reviews.select_related('author').order_by('-created_at')
     
     is_favorited = False
+    is_author = False
+    active_booking = None
+    can_book = False
+    booking_form = None
+
     if request.user.is_authenticated:
         is_favorited = offer.is_favorited_by(request.user)
+        is_author = (request.user == offer.author)
+        active_booking = BookingRequest.objects.filter(
+            offer=offer,
+            student=request.user,
+            status__in=[BookingRequest.Status.PENDING, BookingRequest.Status.ACCEPTED]
+        ).first()
+        can_book = (not is_author) and request.user.can_book and (active_booking is None)
+        if can_book:
+            booking_form = BookingRequestForm()
 
     context = {
         'offer': offer,
         'reviews': reviews,
         'is_favorited': is_favorited,
+        'is_author': is_author,
+        'active_booking': active_booking,
+        'can_book': can_book,
+        'booking_form': booking_form,
     }
     return render(request, 'offers/offer_detail.html', context)
 
@@ -44,6 +62,120 @@ def mentors_view(request):
         .order_by('-date_joined')
     )
     return render(request, 'offers/mentors.html', {'mentors': mentors})
+
+
+@login_required
+def booking_create_view(request, pk):
+    offer = get_object_or_404(Offer, pk=pk, status__slug='published')
+
+    if offer.author == request.user:
+        messages.error(request, "You cannot send a booking request to your own offer.")
+        return redirect('offer_detail', pk=pk)
+
+    if not request.user.can_book:
+        messages.error(request, "Your account is restricted from booking lessons.")
+        return redirect('offer_detail', pk=pk)
+
+    has_active = BookingRequest.objects.filter(
+        offer=offer,
+        student=request.user,
+        status__in=[BookingRequest.Status.PENDING, BookingRequest.Status.ACCEPTED]
+    ).exists()
+
+    if has_active:
+        messages.warning(request, "You already have an active request for this lesson.")
+        return redirect('offer_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = BookingRequestForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.offer = offer
+            booking.student = request.user
+            booking.status = BookingRequest.Status.PENDING
+            booking.save()
+            messages.success(request, f"Booking request for '{offer.title}' sent successfully!")
+            return redirect('my_requests')
+        else:
+            messages.error(request, "Could not submit booking request. Please check your message.")
+    
+    return redirect('offer_detail', pk=pk)
+
+
+@login_required
+def my_requests_view(request):
+    incoming_requests = (
+        BookingRequest.objects.filter(offer__author=request.user)
+        .select_related('offer', 'student')
+        .order_by('-created_at')
+    )
+    outgoing_requests = (
+        BookingRequest.objects.filter(student=request.user)
+        .select_related('offer', 'offer__author')
+        .order_by('-created_at')
+    )
+    context = {
+        'incoming_requests': incoming_requests,
+        'outgoing_requests': outgoing_requests,
+    }
+    return render(request, 'offers/my_requests.html', context)
+
+
+@login_required
+def booking_status_update_view(request, pk, action):
+    booking = get_object_or_404(
+        BookingRequest.objects.select_related('offer', 'student', 'offer__author'),
+        pk=pk
+    )
+
+    is_teacher = bool(request.user == booking.offer.author or request.user.is_admin_user)
+    is_student = bool(request.user == booking.student or request.user.is_admin_user)
+
+    if action == 'accept':
+        if not is_teacher:
+            return HttpResponseForbidden("Only the lesson author can accept requests.")
+        if booking.status != BookingRequest.Status.PENDING:
+            messages.error(request, "Only pending requests can be accepted.")
+        else:
+            booking.status = BookingRequest.Status.ACCEPTED
+            booking.save()
+            messages.success(request, f"Accepted request from {booking.student.username}.")
+
+    elif action == 'reject':
+        if not is_teacher:
+            return HttpResponseForbidden("Only the lesson author can reject requests.")
+        if booking.status != BookingRequest.Status.PENDING:
+            messages.error(request, "Only pending requests can be rejected.")
+        else:
+            booking.status = BookingRequest.Status.REJECTED
+            booking.save()
+            messages.info(request, f"Rejected request from {booking.student.username}.")
+
+    elif action == 'complete':
+        if not is_teacher:
+            return HttpResponseForbidden("Only the lesson author can mark lessons as completed.")
+        if booking.status != BookingRequest.Status.ACCEPTED:
+            messages.error(request, "Only accepted lessons can be marked as completed.")
+        else:
+            booking.status = BookingRequest.Status.COMPLETED
+            booking.save()
+            messages.success(request, f"Lesson with {booking.student.username} marked as completed!")
+
+    elif action == 'cancel':
+        if not is_student:
+            return HttpResponseForbidden("Only the requesting student can cancel this request.")
+        if booking.status != BookingRequest.Status.PENDING:
+            messages.error(request, "Only pending requests can be cancelled.")
+        else:
+            booking.status = BookingRequest.Status.CANCELLED
+            booking.save()
+            messages.info(request, "Booking request cancelled.")
+
+    else:
+        messages.error(request, "Invalid action.")
+
+    return redirect('my_requests')
+
 
 
 @login_required
