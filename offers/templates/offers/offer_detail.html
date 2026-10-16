@@ -62,16 +62,32 @@
             </div>
         </div>
 
-        {% if user.is_authenticated and user == offer.author or user.is_admin_user %}
-            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            {% if user.is_authenticated and offer.is_published %}
+                <form method="post" action="{% url 'favorite_toggle' offer.pk %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    {% if is_favorited %}
+                        <button type="submit" class="secondary" style="padding: 0.45rem 0.85rem; font-size: 0.875rem;">
+                            ❤️ Saved
+                        </button>
+                    {% else %}
+                        <button type="submit" class="secondary" style="padding: 0.45rem 0.85rem; font-size: 0.875rem;">
+                            🤍 Favorite
+                        </button>
+                    {% endif %}
+                </form>
+            {% endif %}
+
+            {% if user.is_authenticated and user == offer.author or user.is_admin_user %}
                 <a href="{% url 'offer_edit' offer.pk %}" class="button secondary">
                     ✏ Edit
                 </a>
                 <a href="{% url 'offer_delete' offer.pk %}" class="button danger">
                     🗑 Delete
                 </a>
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
 

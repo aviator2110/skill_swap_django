@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}My Favorites — SkillSwap{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1>My Favorites</h1>
+    <p style="color: var(--text-muted);">Quickly access skills you have saved and keep track of your favorite mentors.</p>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h2>Saved Skills ({{ favorites.count }})</h2>
+</div>
+
+{% if favorites %}
+    <section class="grid">
+        {% for fav in favorites %}
+            <article>
+                {% if fav.offer.cover_image %}
+                    <img src="{{ fav.offer.cover_image.url }}" alt="{{ fav.offer.title }}">
+                {% else %}
+                    <div style="height: 180px; background: var(--surface-alt); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 2.5rem; margin-bottom: 1rem;">
+                        🎓
+                    </div>
+                {% endif %}
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <mark>{{ fav.offer.category.name }}</mark>
+                        <span class="badge">{{ fav.offer.level.name }}</span>
+                        <span class="badge">{{ fav.offer.format.name }}</span>
+                    </div>
+                    <form method="post" action="{% url 'favorite_toggle' fav.offer.pk %}" style="margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{% url 'favorites' %}">
+                        <button type="submit" class="secondary" title="Remove from Favorites" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; border-radius: var(--radius-sm); line-height: 1;">
+                            ❤️ Remove
+                        </button>
+                    </form>
+                </div>
+
+                <h3><a href="{% url 'offer_detail' fav.offer.pk %}">{{ fav.offer.title }}</a></h3>
+                <p style="color: var(--text-muted); font-size: 0.925rem;">{{ fav.offer.description|truncatewords:22 }}</p>
+
+                <footer>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {% if fav.offer.author.avatar %}
+                            <img src="{{ fav.offer.author.avatar.url }}" alt="{{ fav.offer.author.username }}" class="avatar avatar-sm" style="margin: 0; width: 32px; height: 32px;">
+                        {% else %}
+                            <span class="avatar avatar-sm" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 0.8rem;">
+                                {{ fav.offer.author.username|slice:":1"|upper }}
+                            </span>
+                        {% endif %}
+                        <a href="{% url 'user_profile' fav.offer.author.username %}" style="font-weight: 600; color: var(--text);">
+                            {{ fav.offer.author.username }}
+                        </a>
+                    </div>
+
+                    <div>
+                        {% if fav.offer.average_rating %}
+                            <span class="rating-pill">★ {{ fav.offer.average_rating }}</span>
+                        {% else %}
+                            <small style="color: var(--text-muted);">New</small>
+                        {% endif %}
+                    </div>
+                </footer>
+            </article>
+        {% endfor %}
+    </section>
+{% else %}
+    <div class="empty-state">
+        <h3>No Saved Skills Yet</h3>
+        <p>You haven't added any skills to your favorites. Browse the catalog and click the heart icon to save skills here.</p>
+        <p><a href="{% url 'explore' %}" class="button">Explore Skills</a></p>
+    </div>
+{% endif %}
+{% endblock %}

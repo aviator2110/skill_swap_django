@@ -15,6 +15,7 @@
                 <li><a href="{% url 'explore' %}">Explore</a></li>
                 <li><a href="{% url 'mentors' %}">Mentors</a></li>
                 {% if user.is_authenticated %}
+                    <li><a href="{% url 'favorites' %}">Favorites</a></li>
                     <li><a href="{% url 'my_offers' %}">My Offers</a></li>
                     <li><a href="{% url 'my_requests' %}">My Requests</a></li>
                     <li><a href="{% url 'profile' %}">Profile ({{ user.username }})</a></li>

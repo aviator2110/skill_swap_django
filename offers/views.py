@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseForbidden
-from .models import Offer, Status, BookingRequest, Review
+from django.http import HttpResponseForbidden, HttpResponseNotAllowed
+from .models import Offer, Status, BookingRequest, Review, Favorite
 from .forms import OfferForm, BookingRequestForm, ReviewForm
 
 User = get_user_model()
@@ -15,7 +15,14 @@ def explore_view(request):
         .select_related('author', 'category', 'level', 'format', 'status')
         .order_by('-created_at')
     )
-    return render(request, 'offers/explore.html', {'offers': offers})
+    favorited_ids = set()
+    if request.user.is_authenticated:
+        favorited_ids = set(request.user.favorites.values_list('offer_id', flat=True))
+
+    return render(request, 'offers/explore.html', {
+        'offers': offers,
+        'favorited_ids': favorited_ids,
+    })
 
 
 def offer_detail_view(request, pk):
@@ -354,5 +361,37 @@ def offer_delete_view(request, pk):
         return redirect('my_offers')
 
     return render(request, 'offers/offer_confirm_delete.html', {'offer': offer})
+
+
+@login_required
+def favorite_toggle_view(request, pk):
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    offer = get_object_or_404(Offer, pk=pk, status__slug='published')
+    favorite = Favorite.objects.filter(user=request.user, offer=offer).first()
+
+    if favorite:
+        favorite.delete()
+        messages.info(request, f"Removed '{offer.title}' from your favorites.")
+    else:
+        Favorite.objects.create(user=request.user, offer=offer)
+        messages.success(request, f"Added '{offer.title}' to your favorites!")
+
+    next_url = request.POST.get('next')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('offer_detail', pk=offer.pk)
+
+
+@login_required
+def favorites_view(request):
+    favorites = (
+        request.user.favorites.filter(offer__status__slug='published')
+        .select_related('offer', 'offer__author', 'offer__category', 'offer__level', 'offer__format', 'offer__status')
+        .order_by('-created_at')
+    )
+    return render(request, 'offers/favorites.html', {'favorites': favorites})
+
 
 
