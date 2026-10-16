@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Review — SkillSwap{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 2rem auto;">
+    <article>
+        <h1>Delete Review</h1>
+        <p>Are you sure you want to permanently delete this review for <strong>"{{ offer.title }}"</strong>?</p>
+
+        <div style="background: var(--surface-alt); border-radius: var(--radius-sm); padding: 1rem; margin: 1rem 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <strong>{{ review.author.username }}</strong>
+                <span class="rating-pill">★ {{ review.rating }}/5</span>
+            </div>
+            <p style="margin: 0; color: var(--text); font-size: 0.9rem;">{{ review.comment }}</p>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.9rem;">This action cannot be undone.</p>
+
+        <form method="post" style="padding: 0; border: none; box-shadow: none; background: transparent; margin-top: 1.5rem;">
+            {% csrf_token %}
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+                <button type="submit" class="danger">Yes, Delete Review</button>
+                <a href="{% url 'offer_detail' offer.pk %}" class="button secondary">Cancel</a>
+            </div>
+        </form>
+    </article>
+</div>
+{% endblock %}

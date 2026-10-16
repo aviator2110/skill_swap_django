@@ -130,12 +130,20 @@
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             {% for review in teacher_reviews %}
                 <article style="padding: 1.25rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
                         <div>
-                            <strong>{{ review.author.username }}</strong>
-                            <small style="color: var(--text-muted);">for "{{ review.offer.title }}"</small>
+                            <a href="{% url 'user_profile' review.author.username %}"><strong>{{ review.author.username }}</strong></a>
+                            <small style="color: var(--text-muted);">for <a href="{% url 'offer_detail' review.offer.pk %}">"{{ review.offer.title }}"</a></small>
                         </div>
-                        <span class="rating-pill">★ {{ review.rating }}/5</span>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="rating-pill">★ {{ review.rating }}/5</span>
+                            {% if user == review.author %}
+                                <a href="{% url 'review_edit' review.pk %}" style="font-size: 0.8rem;">Edit</a>
+                                <a href="{% url 'review_delete' review.pk %}" style="font-size: 0.8rem; color: var(--danger-text);">Delete</a>
+                            {% elif user.is_authenticated and user.is_admin_user %}
+                                <a href="{% url 'review_delete' review.pk %}" style="font-size: 0.8rem; color: var(--danger-text);">Delete (Admin)</a>
+                            {% endif %}
+                        </div>
                     </div>
                     <p style="margin: 0; color: var(--text);">{{ review.comment }}</p>
                     <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">{{ review.created_at|date:"M d, Y" }}</small>

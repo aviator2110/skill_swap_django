@@ -10,6 +10,9 @@ urlpatterns = [
     path('offers/<int:pk>/book/', views.booking_create_view, name='booking_create'),
     path('my-offers/', views.my_offers_view, name='my_offers'),
     path('my-requests/', views.my_requests_view, name='my_requests'),
+    path('requests/<int:booking_id>/review/', views.review_create_view, name='review_create'),
     path('requests/<int:pk>/<str:action>/', views.booking_status_update_view, name='booking_status_update'),
+    path('reviews/<int:pk>/edit/', views.review_edit_view, name='review_edit'),
+    path('reviews/<int:pk>/delete/', views.review_delete_view, name='review_delete'),
     path('mentors/', views.mentors_view, name='mentors'),
 ]

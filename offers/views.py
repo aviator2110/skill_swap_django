@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden
-from .models import Offer, Status, BookingRequest
-from .forms import OfferForm, BookingRequestForm
+from .models import Offer, Status, BookingRequest, Review
+from .forms import OfferForm, BookingRequestForm, ReviewForm
 
 User = get_user_model()
 
@@ -106,12 +106,12 @@ def booking_create_view(request, pk):
 def my_requests_view(request):
     incoming_requests = (
         BookingRequest.objects.filter(offer__author=request.user)
-        .select_related('offer', 'student')
+        .select_related('offer', 'student', 'review')
         .order_by('-created_at')
     )
     outgoing_requests = (
         BookingRequest.objects.filter(student=request.user)
-        .select_related('offer', 'offer__author')
+        .select_related('offer', 'offer__author', 'review')
         .order_by('-created_at')
     )
     context = {
@@ -175,6 +175,96 @@ def booking_status_update_view(request, pk, action):
         messages.error(request, "Invalid action.")
 
     return redirect('my_requests')
+
+
+@login_required
+def review_create_view(request, booking_id):
+    booking = get_object_or_404(
+        BookingRequest.objects.select_related('offer', 'student', 'offer__author'),
+        pk=booking_id
+    )
+
+    if booking.student != request.user:
+        return HttpResponseForbidden("Only the student who completed the lesson can leave a review.")
+
+    if booking.status != BookingRequest.Status.COMPLETED:
+        messages.error(request, "Reviews can only be left for completed lessons.")
+        return redirect('my_requests')
+
+    if hasattr(booking, 'review'):
+        messages.info(request, "You have already reviewed this lesson.")
+        return redirect('review_edit', pk=booking.review.pk)
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.booking = booking
+            review.author = request.user
+            review.offer = booking.offer
+            review.save()
+            messages.success(request, f"Thank you for reviewing '{booking.offer.title}'!")
+            return redirect('offer_detail', pk=booking.offer.pk)
+    else:
+        form = ReviewForm()
+
+    context = {
+        'form': form,
+        'booking': booking,
+        'offer': booking.offer,
+        'is_edit': False,
+    }
+    return render(request, 'offers/review_form.html', context)
+
+
+@login_required
+def review_edit_view(request, pk):
+    review = get_object_or_404(
+        Review.objects.select_related('booking', 'offer', 'author'),
+        pk=pk
+    )
+
+    if review.author != request.user:
+        return HttpResponseForbidden("You can only edit your own reviews.")
+
+    if request.method == 'POST':
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your review has been updated.")
+            return redirect('offer_detail', pk=review.offer.pk)
+    else:
+        form = ReviewForm(instance=review)
+
+    context = {
+        'form': form,
+        'booking': review.booking,
+        'offer': review.offer,
+        'is_edit': True,
+        'review': review,
+    }
+    return render(request, 'offers/review_form.html', context)
+
+
+@login_required
+def review_delete_view(request, pk):
+    review = get_object_or_404(
+        Review.objects.select_related('offer', 'author'),
+        pk=pk
+    )
+
+    if review.author != request.user and not request.user.is_admin_user:
+        return HttpResponseForbidden("You do not have permission to delete this review.")
+
+    offer_pk = review.offer.pk
+
+    if request.method == 'POST':
+        review.delete()
+        messages.success(request, "Review deleted successfully.")
+        return redirect('offer_detail', pk=offer_pk)
+
+    return render(request, 'offers/review_confirm_delete.html', {'review': review, 'offer': review.offer})
+
 
 
 

@@ -39,3 +39,25 @@ class BookingRequestForm(forms.ModelForm):
             }),
         }
 
+
+class ReviewForm(forms.ModelForm):
+    rating = forms.IntegerField(
+        min_value=1,
+        max_value=5,
+        widget=forms.HiddenInput(),
+        initial=5,
+        label="Rating"
+    )
+
+    class Meta:
+        from .models import Review
+        model = Review
+        fields = ['rating', 'comment']
+        widgets = {
+            'comment': forms.Textarea(attrs={
+                'placeholder': 'Share your learning experience, what you gained from this lesson, and your thoughts on the mentor...',
+                'rows': 4,
+            }),
+        }
+
+

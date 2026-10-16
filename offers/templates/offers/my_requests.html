@@ -153,7 +153,17 @@
                                     <button type="submit" class="danger" style="padding: 0.35rem 0.65rem; font-size: 0.85rem;">Cancel</button>
                                 </form>
                             {% elif req.status == 'completed' %}
-                                <small style="color: var(--success); font-weight: 600;">Lesson Finished</small>
+                                {% if req.review %}
+                                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                        <span class="rating-pill" style="align-self: flex-start;">★ {{ req.review.rating }}/5</span>
+                                        <div style="font-size: 0.75rem;">
+                                            <a href="{% url 'review_edit' req.review.pk %}">Edit</a> &bull;
+                                            <a href="{% url 'review_delete' req.review.pk %}" style="color: var(--danger-text);">Delete</a>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <a href="{% url 'review_create' req.pk %}" class="button" style="padding: 0.35rem 0.65rem; font-size: 0.85rem; white-space: nowrap;">★ Leave Review</a>
+                                {% endif %}
                             {% else %}
                                 <small style="color: var(--text-muted);">—</small>
                             {% endif %}
