@@ -8,8 +8,102 @@
     <p>Learn from experienced community members and share your own expertise. Book 1-on-1 sessions with mentors across diverse categories.</p>
 </section>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-    <h2>Published Offers ({{ offers.count }})</h2>
+<form method="get" action="{% url 'explore' %}" class="filter-card">
+    <div class="filter-search-row">
+        <input 
+            type="search" 
+            name="q" 
+            value="{{ search_query }}" 
+            placeholder="🔍 Search skills by title, description or keywords..."
+            aria-label="Search skills"
+        >
+        <button type="submit">Search</button>
+        {% if has_active_filters %}
+            <a href="{% url 'explore' %}" class="button secondary">Reset</a>
+        {% endif %}
+    </div>
+
+    <div class="filter-selects-row">
+        <div class="filter-group">
+            <label for="filter-category">Category</label>
+            <select name="category" id="filter-category" onchange="this.form.submit()">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                    <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="filter-level">Level</label>
+            <select name="level" id="filter-level" onchange="this.form.submit()">
+                <option value="">All Levels</option>
+                {% for lvl in levels %}
+                    <option value="{{ lvl.slug }}" {% if selected_level == lvl.slug %}selected{% endif %}>
+                        {{ lvl.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="filter-format">Format</label>
+            <select name="format" id="filter-format" onchange="this.form.submit()">
+                <option value="">All Formats</option>
+                {% for fmt in formats %}
+                    <option value="{{ fmt.slug }}" {% if selected_format == fmt.slug %}selected{% endif %}>
+                        {{ fmt.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label for="filter-rating">Min Rating</label>
+            <select name="min_rating" id="filter-rating" onchange="this.form.submit()">
+                <option value="">Any Rating</option>
+                <option value="4.5" {% if selected_min_rating == '4.5' %}selected{% endif %}>★ 4.5+</option>
+                <option value="4" {% if selected_min_rating == '4' or selected_min_rating == '4.0' %}selected{% endif %}>★ 4+</option>
+                <option value="3" {% if selected_min_rating == '3' or selected_min_rating == '3.0' %}selected{% endif %}>★ 3+</option>
+                <option value="2" {% if selected_min_rating == '2' or selected_min_rating == '2.0' %}selected{% endif %}>★ 2+</option>
+                <option value="1" {% if selected_min_rating == '1' or selected_min_rating == '1.0' %}selected{% endif %}>★ 1+</option>
+            </select>
+        </div>
+    </div>
+
+    {% if has_active_filters %}
+        <div class="filter-active-pills">
+            <span style="color: var(--text-muted); font-weight: 500;">Active filters:</span>
+            {% if search_query %}
+                <span class="filter-pill">Query: "{{ search_query }}"</span>
+            {% endif %}
+            {% if selected_category %}
+                <span class="filter-pill">Category: {{ selected_category|title }}</span>
+            {% endif %}
+            {% if selected_level %}
+                <span class="filter-pill">Level: {{ selected_level|title }}</span>
+            {% endif %}
+            {% if selected_format %}
+                <span class="filter-pill">Format: {{ selected_format|title }}</span>
+            {% endif %}
+            {% if selected_min_rating %}
+                <span class="filter-pill">Rating: ★ {{ selected_min_rating }}+</span>
+            {% endif %}
+            <a href="{% url 'explore' %}" style="font-size: 0.825rem; margin-left: 0.25rem;">Clear all</a>
+        </div>
+    {% endif %}
+</form>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+    <h2>
+        {% if has_active_filters %}
+            Found Offers ({{ offers.count }})
+        {% else %}
+            Published Offers ({{ offers.count }})
+        {% endif %}
+    </h2>
     {% if user.is_staff %}
         <a href="{% url 'admin:offers_offer_add' %}" class="button" target="_blank">+ Add via Admin</a>
     {% endif %}
@@ -74,10 +168,18 @@
     </section>
 {% else %}
     <div class="empty-state">
-        <h3>No Published Offers Yet</h3>
-        <p>You can create an offer in the admin panel and set its status to <strong>Published</strong> to view it here.</p>
-        {% if user.is_staff %}
-            <p><a href="{% url 'admin:offers_offer_add' %}" class="button" target="_blank">Create Offer in Admin</a></p>
+        {% if has_active_filters %}
+            <h3>No Offers Found</h3>
+            <p>No skills match your current search and filter criteria. Try adjusting your keywords or clearing the filters.</p>
+            <p style="margin-top: 1rem;">
+                <a href="{% url 'explore' %}" class="button secondary">Clear all filters</a>
+            </p>
+        {% else %}
+            <h3>No Published Offers Yet</h3>
+            <p>You can create an offer in the admin panel and set its status to <strong>Published</strong> to view it here.</p>
+            {% if user.is_staff %}
+                <p><a href="{% url 'admin:offers_offer_add' %}" class="button" target="_blank">Create Offer in Admin</a></p>
+            {% endif %}
         {% endif %}
     </div>
 {% endif %}

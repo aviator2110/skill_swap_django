@@ -134,6 +134,8 @@ class Offer(models.Model):
 
     @property
     def average_rating(self):
+        if hasattr(self, 'avg_rating') and self.avg_rating is not None:
+            return round(self.avg_rating, 1)
         result = self.reviews.aggregate(models.Avg('rating'))['rating__avg']
         return round(result, 1) if result is not None else None
 

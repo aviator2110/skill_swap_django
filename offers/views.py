@@ -3,26 +3,75 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden, HttpResponseNotAllowed
-from .models import Offer, Status, BookingRequest, Review, Favorite
+from django.db.models import Avg, Q
+from .models import Offer, Category, Level, Format, Status, BookingRequest, Review, Favorite
 from .forms import OfferForm, BookingRequestForm, ReviewForm
 
 User = get_user_model()
 
 
 def explore_view(request):
+    search_query = request.GET.get('q', '').strip()
+    category_slug = request.GET.get('category', '').strip()
+    level_slug = request.GET.get('level', '').strip()
+    format_slug = request.GET.get('format', '').strip()
+    min_rating = request.GET.get('min_rating', '').strip()
+
     offers = (
         Offer.objects.filter(status__slug='published')
         .select_related('author', 'category', 'level', 'format', 'status')
+        .annotate(avg_rating=Avg('reviews__rating'))
         .order_by('-created_at')
     )
+
+    if search_query:
+        offers = offers.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    if category_slug:
+        offers = offers.filter(category__slug=category_slug)
+
+    if level_slug:
+        offers = offers.filter(level__slug=level_slug)
+
+    if format_slug:
+        offers = offers.filter(format__slug=format_slug)
+
+    if min_rating:
+        try:
+            rating_val = float(min_rating)
+            offers = offers.filter(avg_rating__gte=rating_val)
+        except ValueError:
+            pass
+
+    has_active_filters = bool(
+        search_query or category_slug or level_slug or format_slug or min_rating
+    )
+
     favorited_ids = set()
     if request.user.is_authenticated:
         favorited_ids = set(request.user.favorites.values_list('offer_id', flat=True))
 
-    return render(request, 'offers/explore.html', {
+    categories = Category.objects.all().order_by('name')
+    levels = Level.objects.all().order_by('name')
+    formats = Format.objects.all().order_by('name')
+
+    context = {
         'offers': offers,
         'favorited_ids': favorited_ids,
-    })
+        'categories': categories,
+        'levels': levels,
+        'formats': formats,
+        'search_query': search_query,
+        'selected_category': category_slug,
+        'selected_level': level_slug,
+        'selected_format': format_slug,
+        'selected_min_rating': min_rating,
+        'has_active_filters': has_active_filters,
+    }
+
+    return render(request, 'offers/explore.html', context)
 
 
 def offer_detail_view(request, pk):
