@@ -461,8 +461,11 @@ def offer_delete_view(request, pk):
         return HttpResponseForbidden("You do not have permission to delete this offer.")
 
     if request.method == 'POST':
+        is_admin_deleting_other = (request.user.is_admin_user and offer.author != request.user)
         offer.delete()
         messages.success(request, "Offer deleted successfully.")
+        if is_admin_deleting_other:
+            return redirect('admin_dashboard')
         return redirect('my_offers')
 
     return render(request, 'offers/offer_confirm_delete.html', {'offer': offer})
@@ -497,6 +500,159 @@ def favorites_view(request):
         .order_by('-created_at')
     )
     return render(request, 'offers/favorites.html', {'favorites': favorites})
+
+
+@login_required
+def admin_dashboard_view(request):
+    if not request.user.is_admin_user:
+        messages.error(request, "Access restricted. Administrator privileges required.")
+        return redirect('explore')
+
+    active_tab = request.GET.get('tab', 'pending')
+
+    pending_offers = (
+        Offer.objects.filter(status__slug='pending')
+        .select_related('author', 'category', 'level', 'format', 'status')
+        .order_by('-created_at')
+    )
+
+    all_offers_qs = (
+        Offer.objects.all()
+        .select_related('author', 'category', 'level', 'format', 'status')
+        .annotate(avg_rating=Avg('reviews__rating'))
+        .order_by('-created_at')
+    )
+    offer_search = request.GET.get('o_q', '').strip()
+    offer_status = request.GET.get('o_status', '').strip()
+    if offer_search:
+        all_offers_qs = all_offers_qs.filter(
+            Q(title__icontains=offer_search) | Q(author__username__icontains=offer_search)
+        )
+    if offer_status:
+        all_offers_qs = all_offers_qs.filter(status__slug=offer_status)
+
+    users_qs = User.objects.all().order_by('-date_joined')
+    user_search = request.GET.get('u_q', '').strip()
+    if user_search:
+        users_qs = users_qs.filter(
+            Q(username__icontains=user_search) |
+            Q(email__icontains=user_search) |
+            Q(first_name__icontains=user_search) |
+            Q(last_name__icontains=user_search)
+        )
+
+    reviews_qs = (
+        Review.objects.all()
+        .select_related('author', 'offer', 'offer__author')
+        .order_by('-created_at')
+    )
+    review_search = request.GET.get('r_q', '').strip()
+    if review_search:
+        reviews_qs = reviews_qs.filter(
+            Q(comment__icontains=review_search) |
+            Q(author__username__icontains=review_search) |
+            Q(offer__title__icontains=review_search)
+        )
+
+    statuses = Status.objects.all().order_by('name')
+
+    counts = {
+        'pending': pending_offers.count(),
+        'all_offers': Offer.objects.count(),
+        'users': User.objects.count(),
+        'reviews': Review.objects.count(),
+    }
+
+    context = {
+        'active_tab': active_tab,
+        'pending_offers': pending_offers,
+        'all_offers': all_offers_qs,
+        'users_list': users_qs,
+        'reviews_list': reviews_qs,
+        'statuses': statuses,
+        'counts': counts,
+        'offer_search': offer_search,
+        'offer_status': offer_status,
+        'user_search': user_search,
+        'review_search': review_search,
+    }
+    return render(request, 'offers/admin_dashboard.html', context)
+
+
+@login_required
+def admin_offer_moderate_view(request, pk, action):
+    if not request.user.is_admin_user:
+        return HttpResponseForbidden("Administrator privileges required.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    offer = get_object_or_404(Offer, pk=pk)
+
+    if action == 'approve':
+        pub_status = Status.objects.filter(slug='published').first()
+        if pub_status:
+            offer.status = pub_status
+            offer.save()
+            messages.success(request, f"Offer '{offer.title}' has been approved and published.")
+    elif action == 'reject':
+        rej_status = Status.objects.filter(slug='rejected').first()
+        if rej_status:
+            offer.status = rej_status
+            offer.save()
+            messages.warning(request, f"Offer '{offer.title}' has been rejected.")
+    else:
+        messages.error(request, "Invalid moderation action.")
+
+    next_url = request.POST.get('next')
+    if next_url and next_url.startswith('/'):
+        return redirect(next_url)
+    return redirect('admin_dashboard')
+
+
+@login_required
+def admin_user_ban_view(request, pk, action):
+    if not request.user.is_admin_user:
+        return HttpResponseForbidden("Administrator privileges required.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    target_user = get_object_or_404(User, pk=pk)
+
+    if target_user == request.user:
+        messages.error(request, "You cannot modify your own ban status.")
+    elif target_user.is_super_admin:
+        messages.error(request, "Super Administrators cannot be banned.")
+    else:
+        if action == 'ban':
+            target_user.is_banned = True
+            target_user.save()
+            messages.warning(request, f"User '{target_user.username}' has been banned.")
+        elif action == 'unban':
+            target_user.is_banned = False
+            target_user.save()
+            messages.success(request, f"User '{target_user.username}' has been unbanned.")
+        else:
+            messages.error(request, "Invalid user action.")
+
+    return redirect('/admin-panel/?tab=users')
+
+
+@login_required
+def admin_review_delete_action_view(request, pk):
+    if not request.user.is_admin_user:
+        return HttpResponseForbidden("Administrator privileges required.")
+
+    if request.method != 'POST':
+        return HttpResponseNotAllowed(['POST'])
+
+    review = get_object_or_404(Review, pk=pk)
+    offer_title = review.offer.title
+    review.delete()
+    messages.success(request, f"Review for '{offer_title}' has been deleted.")
+    return redirect('/admin-panel/?tab=reviews')
+
 
 
 

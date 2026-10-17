@@ -7,6 +7,9 @@ from .models import User
 
 
 def Register_view(request):
+    if request.user.is_authenticated:
+        return redirect('explore')
+
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
@@ -23,6 +26,9 @@ def Register_view(request):
 
 
 def Login_view(request):
+    if request.user.is_authenticated:
+        return redirect('explore')
+
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():

@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrator Panel — SkillSwap{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin-bottom: 0.25rem;">Administrator Control Panel</h1>
+        <p style="color: var(--text-muted); margin: 0;">
+            Logged in as <strong>{{ user.username }}</strong>
+            <span class="badge {% if user.is_super_admin %}badge-success{% else %}badge-warning{% endif %}" style="margin-left: 0.5rem;">
+                {{ user.get_role_display }}
+            </span>
+        </p>
+    </div>
+
+    {% if user.is_super_admin %}
+        <div>
+            <a href="{% url 'admin:index' %}" class="button secondary" target="_blank">Open Django Admin (Super Admin) &rarr;</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="stats-bar" style="margin-bottom: 2rem;">
+    <div class="stat-item">
+        <span class="stat-value" {% if counts.pending > 0 %}style="color: var(--warning);"{% endif %}>
+            {{ counts.pending }}
+        </span>
+        <span class="stat-label">Pending Offers</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value">{{ counts.all_offers }}</span>
+        <span class="stat-label">Total Offers</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value">{{ counts.users }}</span>
+        <span class="stat-label">Registered Users</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value">{{ counts.reviews }}</span>
+        <span class="stat-label">Total Reviews</span>
+    </div>
+</div>
+
+<nav class="admin-tabs" aria-label="Admin Navigation Tabs">
+    <a href="?tab=pending" class="admin-tab {% if active_tab == 'pending' %}active{% endif %}">
+        🛡️ Offers Moderation
+        {% if counts.pending > 0 %}
+            <span class="badge badge-warning">{{ counts.pending }}</span>
+        {% endif %}
+    </a>
+    <a href="?tab=offers" class="admin-tab {% if active_tab == 'offers' %}active{% endif %}">
+        📁 All Offers
+        <span class="badge">{{ counts.all_offers }}</span>
+    </a>
+    <a href="?tab=users" class="admin-tab {% if active_tab == 'users' %}active{% endif %}">
+        👥 Users Management
+        <span class="badge">{{ counts.users }}</span>
+    </a>
+    <a href="?tab=reviews" class="admin-tab {% if active_tab == 'reviews' %}active{% endif %}">
+        ⭐ Reviews Moderation
+        <span class="badge">{{ counts.reviews }}</span>
+    </a>
+</nav>
+
+{% if active_tab == 'pending' %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Pending Offers Awaiting Moderation ({{ pending_offers.count }})</h2>
+    </div>
+
+    {% if pending_offers %}
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Offer</th>
+                        <th>Author</th>
+                        <th>Category</th>
+                        <th>Level / Format</th>
+                        <th>Submitted</th>
+                        <th style="text-align: right;">Moderation Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for offer in pending_offers %}
+                        <tr>
+                            <td>
+                                <strong><a href="{% url 'offer_detail' offer.pk %}" target="_blank">{{ offer.title }}</a></strong>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                    ⏱ {{ offer.duration_minutes }} mins
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'user_profile' offer.author.username %}" target="_blank">
+                                    {{ offer.author.username }}
+                                </a>
+                            </td>
+                            <td><mark>{{ offer.category.name }}</mark></td>
+                            <td>
+                                <span class="badge">{{ offer.level.name }}</span>
+                                <span class="badge">{{ offer.format.name }}</span>
+                            </td>
+                            <td style="font-size: 0.85rem; color: var(--text-muted);">
+                                {{ offer.created_at|date:"M d, Y H:i" }}
+                            </td>
+                            <td style="text-align: right; white-space: nowrap;">
+                                <div style="display: inline-flex; gap: 0.35rem; align-items: center;">
+                                    <form method="post" action="{% url 'admin_offer_moderate' offer.pk 'approve' %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="admin-action-btn success" title="Approve and Publish">
+                                            ✓ Approve
+                                        </button>
+                                    </form>
+
+                                    <form method="post" action="{% url 'admin_offer_moderate' offer.pk 'reject' %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                        <button type="submit" class="admin-action-btn danger" title="Reject Offer">
+                                            ✕ Reject
+                                        </button>
+                                    </form>
+
+                                    <a href="{% url 'offer_edit' offer.pk %}" class="admin-action-btn secondary" target="_blank" title="Edit Offer">
+                                        ✏ Edit
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>🎉 All Clean! No Pending Offers</h3>
+            <p>All submitted offers have been reviewed. When users create or update offers, they will appear here for verification.</p>
+        </div>
+    {% endif %}
+
+{% elif active_tab == 'offers' %}
+    <form method="get" action="" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center;">
+        <input type="hidden" name="tab" value="offers">
+        <input type="search" name="o_q" value="{{ offer_search }}" placeholder="Search by title or author..." style="flex: 1; min-width: 220px; margin-bottom: 0;">
+        <select name="o_status" onchange="this.form.submit()" style="width: auto; min-width: 160px; margin-bottom: 0;">
+            <option value="">All Statuses</option>
+            {% for st in statuses %}
+                <option value="{{ st.slug }}" {% if offer_status == st.slug %}selected{% endif %}>{{ st.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Filter</button>
+        {% if offer_search or offer_status %}
+            <a href="?tab=offers" class="button secondary">Clear</a>
+        {% endif %}
+    </form>
+
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Author</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Rating</th>
+                    <th>Created</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for offer in all_offers %}
+                    <tr>
+                        <td>
+                            <strong><a href="{% url 'offer_detail' offer.pk %}" target="_blank">{{ offer.title }}</a></strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'user_profile' offer.author.username %}" target="_blank">
+                                {{ offer.author.username }}
+                            </a>
+                        </td>
+                        <td><mark>{{ offer.category.name }}</mark></td>
+                        <td>
+                            {% if offer.status.slug == 'published' %}
+                                <span class="badge badge-success">{{ offer.status.name }}</span>
+                            {% elif offer.status.slug == 'pending' %}
+                                <span class="badge badge-warning">{{ offer.status.name }}</span>
+                            {% elif offer.status.slug == 'rejected' %}
+                                <span class="badge badge-danger">{{ offer.status.name }}</span>
+                            {% else %}
+                                <span class="badge">{{ offer.status.name }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if offer.average_rating %}
+                                <span class="rating-pill">★ {{ offer.average_rating }}</span>
+                            {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.85rem;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">
+                            {{ offer.created_at|date:"M d, Y" }}
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <div style="display: inline-flex; gap: 0.35rem;">
+                                <a href="{% url 'offer_detail' offer.pk %}" class="admin-action-btn secondary" target="_blank">View</a>
+                                <a href="{% url 'offer_edit' offer.pk %}" class="admin-action-btn secondary">Edit</a>
+                                <a href="{% url 'offer_delete' offer.pk %}" class="admin-action-btn danger">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            No offers found matching your criteria.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% elif active_tab == 'users' %}
+    <form method="get" action="" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <input type="hidden" name="tab" value="users">
+        <input type="search" name="u_q" value="{{ user_search }}" placeholder="Search user by username, email or name..." style="flex: 1; min-width: 250px; margin-bottom: 0;">
+        <button type="submit">Search Users</button>
+        {% if user_search %}
+            <a href="?tab=users" class="button secondary">Clear</a>
+        {% endif %}
+    </form>
+
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th style="text-align: right;">Moderation Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users_list %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                {% if u.avatar %}
+                                    <img src="{{ u.avatar.url }}" alt="{{ u.username }}" class="avatar avatar-sm" style="width: 28px; height: 28px; margin: 0;">
+                                {% else %}
+                                    <span class="avatar avatar-sm" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: #e0e7ff; color: #4338ca; font-weight: 700; font-size: 0.75rem; margin: 0;">
+                                        {{ u.username|slice:":1"|upper }}
+                                    </span>
+                                {% endif %}
+                                <a href="{% url 'user_profile' u.username %}" target="_blank" style="font-weight: 600;">
+                                    {{ u.username }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>{{ u.email|default:"—" }}</td>
+                        <td>
+                            {% if u.is_super_admin %}
+                                <span class="badge badge-success">Super Admin</span>
+                            {% elif u.role == 'admin' %}
+                                <span class="badge badge-warning">Admin</span>
+                            {% else %}
+                                <span class="badge">User</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_banned %}
+                                <span class="badge badge-danger">Banned</span>
+                            {% else %}
+                                <span class="badge badge-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">
+                            {{ u.date_joined|date:"M d, Y" }}
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            {% if u.is_super_admin %}
+                                <span style="font-size: 0.825rem; color: var(--text-muted);">Protected</span>
+                            {% elif u == user %}
+                                <span style="font-size: 0.825rem; color: var(--text-muted);">Your account</span>
+                            {% else %}
+                                {% if u.is_banned %}
+                                    <form method="post" action="{% url 'admin_user_ban' u.pk 'unban' %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="admin-action-btn success">
+                                            Unban User
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="post" action="{% url 'admin_user_ban' u.pk 'ban' %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;" onsubmit="return confirm('Are you sure you want to ban user {{ u.username }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="admin-action-btn danger">
+                                            Ban User
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            No users found.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% elif active_tab == 'reviews' %}
+    <form method="get" action="" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <input type="hidden" name="tab" value="reviews">
+        <input type="search" name="r_q" value="{{ review_search }}" placeholder="Search reviews by comment text, author, or skill..." style="flex: 1; min-width: 250px; margin-bottom: 0;">
+        <button type="submit">Search Reviews</button>
+        {% if review_search %}
+            <a href="?tab=reviews" class="button secondary">Clear</a>
+        {% endif %}
+    </form>
+
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Offer</th>
+                    <th>Author</th>
+                    <th>Rating</th>
+                    <th>Comment</th>
+                    <th>Date</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reviews_list %}
+                    <tr>
+                        <td>
+                            <strong><a href="{% url 'offer_detail' r.offer.pk %}" target="_blank">{{ r.offer.title }}</a></strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'user_profile' r.author.username %}" target="_blank">
+                                {{ r.author.username }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="rating-pill">★ {{ r.rating }}</span>
+                        </td>
+                        <td style="max-width: 320px; font-size: 0.9rem;">
+                            {{ r.comment }}
+                        </td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">
+                            {{ r.created_at|date:"M d, Y" }}
+                        </td>
+                        <td style="text-align: right; white-space: nowrap;">
+                            <form method="post" action="{% url 'admin_review_delete_action' r.pk %}" style="display: inline; margin: 0; padding: 0; background: transparent; border: none; box-shadow: none;" onsubmit="return confirm('Are you sure you want to permanently delete this review?');">
+                                {% csrf_token %}
+                                <button type="submit" class="admin-action-btn danger">
+                                    Delete Review
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            No reviews found.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock %}

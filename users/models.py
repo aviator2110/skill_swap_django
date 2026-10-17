@@ -48,7 +48,7 @@ class User(AbstractUser):
             self.is_staff = True
             self.is_superuser = True
         elif self.role == self.Role.ADMIN:
-            self.is_staff = True
+            self.is_staff = False
             self.is_superuser = False
         else:
             self.is_staff = False
@@ -62,8 +62,12 @@ class User(AbstractUser):
         return self.role == self.Role.SUPER_ADMIN or self.is_superuser
 
     @property
+    def is_regular_admin(self):
+        return self.role == self.Role.ADMIN and not self.is_superuser
+
+    @property
     def is_admin_user(self):
-        return self.role in [self.Role.ADMIN, self.Role.SUPER_ADMIN] or self.is_superuser or self.is_staff
+        return self.role in [self.Role.ADMIN, self.Role.SUPER_ADMIN] or self.is_superuser
 
     @property
     def can_create_offers(self):

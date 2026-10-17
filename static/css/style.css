@@ -600,3 +600,96 @@ footer {
   font-weight: 600;
 }
 
+/* Admin Dashboard Tabs & Controls */
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  padding-bottom: 0;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  text-decoration: none !important;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.admin-tab:hover {
+  color: var(--primary);
+  background-color: var(--surface-alt);
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.admin-tab.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background-color: var(--primary-light);
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+
+.admin-tab .badge {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.admin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.825rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  line-height: 1.2;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+
+.admin-action-btn.success {
+  background-color: var(--success);
+  color: #ffffff;
+}
+.admin-action-btn.success:hover {
+  background-color: #059669;
+}
+
+.admin-action-btn.danger {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+.admin-action-btn.danger:hover {
+  background-color: #dc2626;
+}
+
+.admin-action-btn.secondary {
+  background-color: var(--surface-alt);
+  color: var(--text);
+  border-color: var(--border);
+}
+.admin-action-btn.secondary:hover {
+  background-color: var(--border);
+}
+
+
