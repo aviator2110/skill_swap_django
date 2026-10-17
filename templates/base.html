@@ -13,6 +13,7 @@
             <strong><a href="{% url 'explore' %}" class="logo">⚡ SkillSwap</a></strong>
             <ul>
                 <li><a href="{% url 'explore' %}">Explore</a></li>
+                <li><a href="{% url 'popular' %}">Popular</a></li>
                 <li><a href="{% url 'mentors' %}">Mentors</a></li>
                 {% if user.is_authenticated %}
                     <li><a href="{% url 'favorites' %}">Favorites</a></li>

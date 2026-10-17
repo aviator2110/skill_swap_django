@@ -74,6 +74,62 @@ def explore_view(request):
     return render(request, 'offers/explore.html', context)
 
 
+def popular_view(request):
+    search_query = request.GET.get('q', '').strip()
+    category_slug = request.GET.get('category', '').strip()
+    level_slug = request.GET.get('level', '').strip()
+    format_slug = request.GET.get('format', '').strip()
+
+    offers = (
+        Offer.objects.filter(status__slug='published')
+        .select_related('author', 'category', 'level', 'format', 'status')
+        .annotate(avg_rating=Avg('reviews__rating'))
+        .filter(avg_rating__gte=4.0)
+        .order_by('-avg_rating', '-created_at')
+    )
+
+    if search_query:
+        offers = offers.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    if category_slug:
+        offers = offers.filter(category__slug=category_slug)
+
+    if level_slug:
+        offers = offers.filter(level__slug=level_slug)
+
+    if format_slug:
+        offers = offers.filter(format__slug=format_slug)
+
+    has_active_filters = bool(
+        search_query or category_slug or level_slug or format_slug
+    )
+
+    favorited_ids = set()
+    if request.user.is_authenticated:
+        favorited_ids = set(request.user.favorites.values_list('offer_id', flat=True))
+
+    categories = Category.objects.all().order_by('name')
+    levels = Level.objects.all().order_by('name')
+    formats = Format.objects.all().order_by('name')
+
+    context = {
+        'offers': offers,
+        'favorited_ids': favorited_ids,
+        'categories': categories,
+        'levels': levels,
+        'formats': formats,
+        'search_query': search_query,
+        'selected_category': category_slug,
+        'selected_level': level_slug,
+        'selected_format': format_slug,
+        'has_active_filters': has_active_filters,
+    }
+
+    return render(request, 'offers/popular.html', context)
+
+
 def offer_detail_view(request, pk):
     offer = get_object_or_404(
         Offer.objects.select_related('author', 'category', 'level', 'format', 'status'),
